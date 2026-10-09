@@ -6,6 +6,9 @@
     <AssemblyName>SolutionAnalyzer</AssemblyName>
     <RootNamespace>SolutionAnalyzer</RootNamespace>
     <OutputType>Library</OutputType>
+    <Authors>Shoaib Khan</Authors>
+    <Company>Shoaib Khan</Company>
+    <Copyright>Copyright © Shoaib Khan</Copyright>
   </PropertyGroup>
   <ItemGroup>
     <!-- Official XrmToolBox plugin package (brings in the Dataverse SDK assemblies). Use the latest version. -->

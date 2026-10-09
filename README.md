@@ -1,5 +1,7 @@
 # Solution Analyzer (XrmToolBox plugin)
 
+**Author:** Shoaib Khan
+
 Read-only data-model quality reports for Dataverse / Dynamics 365:
 
 1. **Similar fields + fill %** - msemr_subject vs xyz_subject (prefix stripped, same display name, fuzzy match), with % of records that have data. Flags *Merge candidate* / *Empty*.
