@@ -12,6 +12,18 @@
     <Company>Shoaib Khan</Company>
     <Copyright>Copyright © Shoaib Khan</Copyright>
   </PropertyGroup>
+  <!-- Build version is stamped from the build date/time so every build gets a new, increasing number:
+       1.<year>.<MMdd>.<HHmm> (local time), e.g. a build on 9 Oct 2026 at 14:35 is 1.2026.1009.1435.
+       This is the version XrmToolBox shows under the tool name. Change the leading "1" for a major release. -->
+  <PropertyGroup>
+    <BuildYear>$([System.DateTime]::Now.Year)</BuildYear>
+    <BuildMonthDay>$([MSBuild]::Add($([MSBuild]::Multiply($([System.DateTime]::Now.Month), 100)), $([System.DateTime]::Now.Day)))</BuildMonthDay>
+    <BuildTime>$([MSBuild]::Add($([MSBuild]::Multiply($([System.DateTime]::Now.Hour), 100)), $([System.DateTime]::Now.Minute)))</BuildTime>
+    <Version>1.$(BuildYear).$(BuildMonthDay).$(BuildTime)</Version>
+    <AssemblyVersion>$(Version)</AssemblyVersion>
+    <FileVersion>$(Version)</FileVersion>
+    <InformationalVersion>$(Version)</InformationalVersion>
+  </PropertyGroup>
   <ItemGroup>
     <!-- Official XrmToolBox plugin package (brings in the Dataverse SDK assemblies). Use the latest version. -->
     <PackageReference Include="XrmToolBoxPackage" Version="1.2024.*" />
