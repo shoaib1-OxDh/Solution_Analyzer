@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net48</TargetFramework>
+    <UseWindowsForms>true</UseWindowsForms>
+    <LangVersion>latest</LangVersion>
+    <AssemblyName>SolutionAnalyzer</AssemblyName>
+    <RootNamespace>SolutionAnalyzer</RootNamespace>
+    <OutputType>Library</OutputType>
+    <Authors>Shoaib Khan</Authors>
+    <Company>Shoaib Khan</Company>
+    <Copyright>Copyright © Shoaib Khan</Copyright>
+  </PropertyGroup>
+  <ItemGroup>
+    <!-- Official XrmToolBox plugin package (brings in the Dataverse SDK assemblies). Use the latest version. -->
+    <PackageReference Include="XrmToolBoxPackage" Version="1.2024.*" />
+    <Reference Include="System.ComponentModel.Composition" />
+  </ItemGroup>
+</Project>
