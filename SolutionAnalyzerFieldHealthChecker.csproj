@@ -24,15 +24,23 @@
     <FileVersion>$(Version)</FileVersion>
     <InformationalVersion>$(Version)</InformationalVersion>
   </PropertyGroup>
+  <!-- NuGet package for the XrmToolBox Tool Library: "dotnet pack -c Release" uses the .nuspec
+       (plugin DLL in lib\net48\Plugins, dependency on XrmToolBox). The package version = build version above. -->
+  <PropertyGroup>
+    <NuspecFile>SolutionAnalyzerFieldHealthChecker.nuspec</NuspecFile>
+    <NuspecBasePath>$(MSBuildProjectDirectory)</NuspecBasePath>
+    <NuspecProperties>version=$(Version);configuration=$(Configuration)</NuspecProperties>
+  </PropertyGroup>
   <ItemGroup>
-    <!-- Official XrmToolBox plugin package (brings in the Dataverse SDK assemblies). Use the latest version. -->
-    <PackageReference Include="XrmToolBoxPackage" Version="1.2024.*" />
+    <!-- Official XrmToolBox plugin package (brings in the Dataverse SDK assemblies).
+         When you change this version, also update the XrmToolBox dependency in the .nuspec. -->
+    <PackageReference Include="XrmToolBoxPackage" Version="1.2025.7.71" />
     <Reference Include="System.ComponentModel.Composition" />
   </ItemGroup>
   <!-- After each build, upload (copy) the plugin DLL into the local XrmToolBox Plugins folder:
        %APPDATA%\MscrmTools\XrmToolBox\Plugins (i.e. C:\Users\<you>\AppData\Roaming\MscrmTools\XrmToolBox\Plugins).
-       Restart XrmToolBox to pick up the new build. Skipped on non-Windows machines. -->
-  <Target Name="CopyToXrmToolBoxPlugins" AfterTargets="Build" Condition="'$(OS)' == 'Windows_NT'">
+       Restart XrmToolBox to pick up the new build. Skipped on non-Windows machines and on build servers (CI). -->
+  <Target Name="CopyToXrmToolBoxPlugins" AfterTargets="Build" Condition="'$(OS)' == 'Windows_NT' And '$(CI)' != 'true'">
     <PropertyGroup>
       <XrmToolBoxPluginsDir>$(APPDATA)\MscrmTools\XrmToolBox\Plugins</XrmToolBoxPluginsDir>
     </PropertyGroup>

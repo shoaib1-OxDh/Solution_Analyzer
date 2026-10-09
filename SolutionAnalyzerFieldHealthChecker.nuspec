@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- NuGet package for the XrmToolBox Tool Library. Built by "dotnet pack" (see the .csproj);
+     $version$ and $configuration$ are filled in from the build. -->
+<package xmlns="http://schemas.microsoft.com/packaging/2013/05/nuspec.xsd">
+  <metadata>
+    <id>ShoaibKhan.XrmToolBox.SolutionAnalyzer</id>
+    <version>$version$</version>
+    <title>Solution Analyzer &amp; Field Health Checker</title>
+    <authors>Shoaib Khan</authors>
+    <owners>Shoaib_khan</owners>
+    <requireLicenseAcceptance>false</requireLicenseAcceptance>
+    <projectUrl>https://github.com/shoaib1-OxDh/Solution_Analyzer</projectUrl>
+    <icon>logo80.png</icon>
+    <iconUrl>https://raw.githubusercontent.com/shoaib1-OxDh/Solution_Analyzer/main/Resources/logo80.png</iconUrl>
+    <summary>Read-only data-model health checks for Dataverse / Dynamics 365.</summary>
+    <description>Read-only data-model quality reports for Microsoft Dataverse / Dynamics 365:
+1. Similar fields + fill % - look-alike columns and how much data each one holds.
+2. Duplicate option sets - choice fields that repeat each other or a global option set.
+3. Field length usage - text columns sized far bigger than the data stored in them.
+4. Unused fields - empty custom columns, with dependency and reference checks.
+Nothing in your environment is changed.</description>
+    <tags>XrmToolBox Plugins Dataverse Solution Analyzer Field Health Unused Fields Option Sets</tags>
+    <dependencies>
+      <group targetFramework=".NETFramework4.8">
+        <dependency id="XrmToolBox" version="1.2025.7.71" />
+      </group>
+    </dependencies>
+  </metadata>
+  <files>
+    <file src="bin\$configuration$\net48\SolutionAnalyzerFieldHealthChecker.dll" target="lib\net48\Plugins" />
+    <file src="Resources\logo80.png" target="" />
+  </files>
+</package>
