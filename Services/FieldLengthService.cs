@@ -62,7 +62,7 @@ namespace SolutionAnalyzerFieldHealthChecker.Services
                         int cfg = (f as StringAttributeMetadata)?.MaxLength ?? (f as MemoAttributeMetadata)?.MaxLength ?? 0;
                         double util = cfg == 0 ? 0 : Math.Round(100.0 * st.Max / cfg, 1);
                         string rec = st.NonEmpty == 0 ? "No data yet"
-                                   : util < o.LengthUtilThreshold ? "Over-provisioned (note: Dataverse can't reduce max length of an existing column - use for design review)"
+                                   : util < o.LengthUtilThreshold ? "Over-provisioned"   // Dataverse can't shrink an existing column - design review only
                                    : "OK";
                         dt.Rows.Add(e.LogicalName, f.LogicalName, f.AttributeType.ToString(), cfg, st.Max,
                                     st.NonEmpty == 0 ? 0 : Math.Round((double)st.Sum / st.NonEmpty, 1),

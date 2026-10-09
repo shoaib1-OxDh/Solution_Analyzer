@@ -38,7 +38,7 @@ namespace SolutionAnalyzerFieldHealthChecker.Services
                         {
                             long filled = counts.Filled[a.LogicalName];
                             double pct = counts.Total == 0 ? 0 : Math.Round(100.0 * filled / counts.Total, 1);
-                            string flag = filled == 0 ? "Empty - delete candidate" : (withData > 1 ? "Merge candidate" : "");
+                            string flag = filled == 0 ? "Empty - delete candidate" : (withData > 1 ? "Merge candidate" : "OK");
                             dt.Rows.Add(e.LogicalName, key, a.LogicalName, Util.Display(a), a.AttributeType.ToString(),
                                         counts.Total, filled, pct, flag);
                         }
