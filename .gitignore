@@ -23,6 +23,19 @@ bld/
 [Ll]og/
 [Ll]ogs/
 
+# Visual Studio
+.vs/
+
+# .NET build output
+bin/
+obj/
+Debug/
+Release/
+
+# User-specific files
+*.user
+*.suo
+
 # .NET Core
 project.lock.json
 project.fragment.lock.json
