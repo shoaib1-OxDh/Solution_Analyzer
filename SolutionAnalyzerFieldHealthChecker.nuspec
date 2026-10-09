@@ -11,6 +11,7 @@
     <requireLicenseAcceptance>false</requireLicenseAcceptance>
     <projectUrl>https://github.com/shoaib1-OxDh/Solution_Analyzer</projectUrl>
     <icon>logo80.png</icon>
+    <readme>README.md</readme>
     <iconUrl>https://raw.githubusercontent.com/shoaib1-OxDh/Solution_Analyzer/main/Resources/logo80.png</iconUrl>
     <summary>Read-only data-model health checks for Dataverse / Dynamics 365.</summary>
     <description>Read-only data-model quality reports for Microsoft Dataverse / Dynamics 365:
@@ -29,5 +30,6 @@ Nothing in your environment is changed.</description>
   <files>
     <file src="bin\$configuration$\net48\SolutionAnalyzerFieldHealthChecker.dll" target="lib\net48\Plugins" />
     <file src="Resources\logo80.png" target="" />
+    <file src="docs\NUGET_README.md" target="README.md" />
   </files>
 </package>
