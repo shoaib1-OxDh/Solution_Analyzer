@@ -17,4 +17,14 @@
     <PackageReference Include="XrmToolBoxPackage" Version="1.2024.*" />
     <Reference Include="System.ComponentModel.Composition" />
   </ItemGroup>
+  <!-- After each build, upload (copy) the plugin DLL into the local XrmToolBox Plugins folder:
+       %APPDATA%\MscrmTools\XrmToolBox\Plugins (i.e. C:\Users\<you>\AppData\Roaming\MscrmTools\XrmToolBox\Plugins).
+       Restart XrmToolBox to pick up the new build. Skipped on non-Windows machines. -->
+  <Target Name="CopyToXrmToolBoxPlugins" AfterTargets="Build" Condition="'$(OS)' == 'Windows_NT'">
+    <PropertyGroup>
+      <XrmToolBoxPluginsDir>$(APPDATA)\MscrmTools\XrmToolBox\Plugins</XrmToolBoxPluginsDir>
+    </PropertyGroup>
+    <MakeDir Directories="$(XrmToolBoxPluginsDir)" />
+    <Copy SourceFiles="$(TargetPath)" DestinationFolder="$(XrmToolBoxPluginsDir)" SkipUnchangedFiles="true" ContinueOnError="true" />
+  </Target>
 </Project>
