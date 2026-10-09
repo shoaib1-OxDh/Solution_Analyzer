@@ -12,7 +12,7 @@ Read-only data-model quality reports for Dataverse / Dynamics 365:
 ## Build
 1. Open the folder in Visual Studio 2022 (or `dotnet build`), target net48.
 2. Update the `XrmToolBoxPackage` version in the .csproj to the latest on NuGet.
-3. Copy `bin/Debug/net48/SolutionAnalyzer.dll` into XrmToolBox's `Plugins` folder (or use the XrmToolBox Plugin Template + `Publish` flow for the Plugin Store / .nupkg).
+3. Copy `bin/Debug/net48/SolutionAnalyzerFieldHealthChecker.dll` into XrmToolBox's `Plugins` folder (or use the XrmToolBox Plugin Template + `Publish` flow for the Plugin Store / .nupkg).
 
 ## Notes & limits
 - Aggregate queries hit the 50,000 limit -> automatic createdon bisection, then paged fallback.

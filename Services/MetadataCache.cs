@@ -6,9 +6,9 @@ using Microsoft.Xrm.Sdk;
 using Microsoft.Xrm.Sdk.Messages;
 using Microsoft.Xrm.Sdk.Metadata;
 using Microsoft.Xrm.Sdk.Query;
-using SolutionAnalyzer.Models;
+using SolutionAnalyzerFieldHealthChecker.Models;
 
-namespace SolutionAnalyzer.Services
+namespace SolutionAnalyzerFieldHealthChecker.Services
 {
     public class MetadataCache
     {

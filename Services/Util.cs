@@ -10,7 +10,7 @@ using Microsoft.Xrm.Sdk;
 using Microsoft.Xrm.Sdk.Metadata;
 using Microsoft.Xrm.Sdk.Query;
 
-namespace SolutionAnalyzer.Services
+namespace SolutionAnalyzerFieldHealthChecker.Services
 {
     public static class Util
     {

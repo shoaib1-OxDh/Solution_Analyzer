@@ -7,11 +7,11 @@ using System.Threading;
 using System.Windows.Forms;
 using Microsoft.Xrm.Sdk;
 using Microsoft.Xrm.Sdk.Query;
-using SolutionAnalyzer.Models;
-using SolutionAnalyzer.Services;
+using SolutionAnalyzerFieldHealthChecker.Models;
+using SolutionAnalyzerFieldHealthChecker.Services;
 using XrmToolBox.Extensibility;
 
-namespace SolutionAnalyzer
+namespace SolutionAnalyzerFieldHealthChecker
 {
     public class MainControl : PluginControlBase
     {

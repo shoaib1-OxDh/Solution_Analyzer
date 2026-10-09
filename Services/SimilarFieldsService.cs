@@ -5,9 +5,9 @@ using System.Linq;
 using System.Threading;
 using Microsoft.Xrm.Sdk;
 using Microsoft.Xrm.Sdk.Metadata;
-using SolutionAnalyzer.Models;
+using SolutionAnalyzerFieldHealthChecker.Models;
 
-namespace SolutionAnalyzer.Services
+namespace SolutionAnalyzerFieldHealthChecker.Services
 {
     /// <summary>Report 1: fields with the same/similar names on one table (msemr_subject vs xyz_subject) + fill %.</summary>
     public static class SimilarFieldsService

@@ -3,8 +3,8 @@
     <TargetFramework>net48</TargetFramework>
     <UseWindowsForms>true</UseWindowsForms>
     <LangVersion>latest</LangVersion>
-    <AssemblyName>SolutionAnalyzer</AssemblyName>
-    <RootNamespace>SolutionAnalyzer</RootNamespace>
+    <AssemblyName>SolutionAnalyzerFieldHealthChecker</AssemblyName>
+    <RootNamespace>SolutionAnalyzerFieldHealthChecker</RootNamespace>
     <OutputType>Library</OutputType>
     <Product>Solution Analyzer &amp; Field Health Checker</Product>
     <Title>Solution Analyzer &amp; Field Health Checker</Title>

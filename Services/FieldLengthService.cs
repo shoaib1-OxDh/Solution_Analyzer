@@ -6,9 +6,9 @@ using System.Threading;
 using Microsoft.Xrm.Sdk;
 using Microsoft.Xrm.Sdk.Metadata;
 using Microsoft.Xrm.Sdk.Query;
-using SolutionAnalyzer.Models;
+using SolutionAnalyzerFieldHealthChecker.Models;
 
-namespace SolutionAnalyzer.Services
+namespace SolutionAnalyzerFieldHealthChecker.Services
 {
     /// <summary>
     /// Report 3: configured MaxLength vs actual longest value for Single-line and Multi-line text.

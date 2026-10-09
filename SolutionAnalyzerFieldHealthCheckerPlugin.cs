@@ -2,7 +2,7 @@ using System.ComponentModel.Composition;
 using XrmToolBox.Extensibility;
 using XrmToolBox.Extensibility.Interfaces;
 
-namespace SolutionAnalyzer
+namespace SolutionAnalyzerFieldHealthChecker
 {
     [Export(typeof(IXrmToolBoxPlugin)),
      ExportMetadata("Name", "Solution Analyzer & Field Health Checker"),
@@ -12,7 +12,7 @@ namespace SolutionAnalyzer
      ExportMetadata("BackgroundColor", "Lavender"),
      ExportMetadata("PrimaryFontColor", "Black"),
      ExportMetadata("SecondaryFontColor", "Gray")]
-    public class SolutionAnalyzerPlugin : PluginBase
+    public class SolutionAnalyzerFieldHealthCheckerPlugin : PluginBase
     {
         public override IXrmToolBoxPluginControl GetControl() => new MainControl();
     }

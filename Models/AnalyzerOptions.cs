@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 
-namespace SolutionAnalyzer.Models
+namespace SolutionAnalyzerFieldHealthChecker.Models
 {
     public class AnalyzerOptions
     {

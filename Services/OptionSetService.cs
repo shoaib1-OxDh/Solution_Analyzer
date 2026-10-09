@@ -5,9 +5,9 @@ using System.Linq;
 using System.Threading;
 using Microsoft.Xrm.Sdk;
 using Microsoft.Xrm.Sdk.Metadata;
-using SolutionAnalyzer.Models;
+using SolutionAnalyzerFieldHealthChecker.Models;
 
-namespace SolutionAnalyzer.Services
+namespace SolutionAnalyzerFieldHealthChecker.Services
 {
     /// <summary>Report 2: duplicate / similar option sets (same table, across tables, and vs global option sets).</summary>
     public static class OptionSetService

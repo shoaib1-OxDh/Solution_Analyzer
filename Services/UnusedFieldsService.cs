@@ -9,9 +9,9 @@ using Microsoft.Crm.Sdk.Messages;
 using Microsoft.Xrm.Sdk;
 using Microsoft.Xrm.Sdk.Metadata;
 using Microsoft.Xrm.Sdk.Query;
-using SolutionAnalyzer.Models;
+using SolutionAnalyzerFieldHealthChecker.Models;
 
-namespace SolutionAnalyzer.Services
+namespace SolutionAnalyzerFieldHealthChecker.Services
 {
     /// <summary>Report 4: custom fields with zero data + dependency analysis. READ-ONLY.</summary>
     public static class UnusedFieldsService
