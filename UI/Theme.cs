@@ -13,7 +13,6 @@ namespace SolutionAnalyzerFieldHealthChecker.UI
         public static readonly Font Small = new Font("Segoe UI", 8.25F);
         public static readonly Font Section = new Font("Segoe UI Semibold", 10.5F);
         public static readonly Font Title = new Font("Segoe UI Semibold", 13F);
-        public static readonly Font Header = new Font("Segoe UI Semibold", 15F);
         public static readonly Font Mono = new Font("Consolas", 8.5F);
 
         public static readonly Color Brand = Color.FromArgb(31, 78, 121);

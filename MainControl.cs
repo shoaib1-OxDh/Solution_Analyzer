@@ -30,7 +30,7 @@ namespace SolutionAnalyzerFieldHealthChecker
         CheckBox chkCustomOnly, chkSystemFields, chkEnableScript;
         NumericUpDown nudFuzzy, nudOptSet, nudUtil, nudSample;
         Button btnCancel;
-        System.Windows.Forms.Label lblLoadStatus;
+        System.Windows.Forms.Label lblLoadStatus, lblFilterSummary;
         TabControl tabs;
         TextBox txtLog;
         readonly ToolTip tip = new ToolTip { AutoPopDelay = 20000, InitialDelay = 300 };
@@ -56,6 +56,7 @@ namespace SolutionAnalyzerFieldHealthChecker
             {
                 cache = null;
                 clbSolutions.Items.Clear();
+                UpdateFilterSummary();
                 SetLoadStatus("Not loaded yet. Click the button above (the reports also load it automatically).", Theme.Muted);
             };
         }
@@ -78,7 +79,7 @@ namespace SolutionAnalyzerFieldHealthChecker
             tabs = new TabControl
             {
                 Dock = DockStyle.Fill, DrawMode = TabDrawMode.OwnerDrawFixed, SizeMode = TabSizeMode.Fixed,
-                ItemSize = new Size(210, 32), Padding = new Point(12, 4)
+                ItemSize = new Size(190, 28), Padding = new Point(10, 3)
             };
             tabs.DrawItem += DrawTab;
             tabs.SelectedIndexChanged += (s, e) => tabs.Invalidate();
@@ -90,16 +91,16 @@ namespace SolutionAnalyzerFieldHealthChecker
 
         Control BuildBanner()
         {
-            var banner = new Panel { Dock = DockStyle.Top, Height = 58, BackColor = Theme.Brand, Padding = new Padding(14, 6, 14, 6) };
+            var banner = new Panel { Dock = DockStyle.Top, Height = 34, BackColor = Theme.Brand, Padding = new Padding(12, 0, 12, 0) };
             var sub = new System.Windows.Forms.Label
             {
-                Dock = DockStyle.Top, AutoSize = false, Height = 20, ForeColor = Color.FromArgb(214, 228, 242), Font = Theme.Base,
-                Text = "Read-only health check of your Dataverse data model. Nothing in your environment is changed."
+                Dock = DockStyle.Fill, TextAlign = ContentAlignment.MiddleLeft, ForeColor = Color.FromArgb(214, 228, 242), Font = Theme.Small,
+                UseMnemonic = false, Text = "Read-only health check of your Dataverse data model. Nothing in your environment is changed."
             };
             var title = new System.Windows.Forms.Label
             {
-                Dock = DockStyle.Top, AutoSize = false, Height = 28, ForeColor = Color.White, Font = Theme.Header,
-                Text = "Solution Analyzer & Field Health Checker"
+                Dock = DockStyle.Left, AutoSize = true, ForeColor = Color.White, Font = Theme.Title, UseMnemonic = false,
+                Text = "Solution Analyzer & Field Health Checker", Padding = new Padding(0, 5, 12, 0)
             };
             banner.Controls.Add(sub);
             banner.Controls.Add(title);
@@ -111,62 +112,84 @@ namespace SolutionAnalyzerFieldHealthChecker
             var left = new FlowLayoutPanel
             {
                 Dock = DockStyle.Fill, FlowDirection = FlowDirection.TopDown, WrapContents = false, AutoScroll = true,
-                Padding = new Padding(10, 4, 10, 10), BackColor = Theme.PanelBack
+                Padding = new Padding(8, 0, 8, 8), BackColor = Theme.PanelBack
             };
 
+            // Step 1 - load
             left.Controls.Add(Section("1", "Load your environment"));
-            left.Controls.Add(ColorButton("Load metadata && solutions", Theme.Brand, (s, e) => ExecuteMethod(LoadAll)));
+            left.Controls.Add(ColorButton("Load metadata & solutions", Theme.Brand, (s, e) => ExecuteMethod(LoadAll)));
             lblLoadStatus = Hint("Not loaded yet. Click the button above (the reports also load it automatically).");
             left.Controls.Add(lblLoadStatus);
 
-            left.Controls.Add(Section("2", "Choose what to analyse"));
-            left.Controls.Add(Hint("Tick solutions to limit the scope. Leave all unticked to scan the whole environment."));
-            clbSolutions = new CheckedListBox { Width = LeftWidth, Height = 140, CheckOnClick = true, BorderStyle = BorderStyle.FixedSingle, IntegralHeight = false };
-            left.Controls.Add(clbSolutions);
+            // Step 2 - scope & filters, collapsed until the user wants to change them
+            var filters = new FlowLayoutPanel
+            {
+                FlowDirection = FlowDirection.TopDown, WrapContents = false, AutoSize = true, AutoSizeMode = AutoSizeMode.GrowAndShrink,
+                Visible = false, Margin = new Padding(0, 0, 0, 4)
+            };
+            left.Controls.Add(ToggleHeader("2", "Scope & filters", filters));
+            lblFilterSummary = Hint("");
+            left.Controls.Add(lblFilterSummary);
+            left.Controls.Add(filters);
+
+            filters.Controls.Add(SubHeading("Solutions (none ticked = whole environment)"));
+            clbSolutions = new CheckedListBox { Width = LeftWidth, Height = 120, CheckOnClick = true, BorderStyle = BorderStyle.FixedSingle, IntegralHeight = false };
+            clbSolutions.ItemCheck += (s, e) => BeginInvoke(new Action(UpdateFilterSummary));
+            filters.Controls.Add(clbSolutions);
             chkCustomOnly = Check("Custom tables only", true, "Skip out-of-the-box Microsoft tables.");
             chkSystemFields = Check("Include system (non-custom) fields", false, "Also analyse standard columns, not just custom ones.");
-            left.Controls.Add(chkCustomOnly);
-            left.Controls.Add(chkSystemFields);
+            chkCustomOnly.CheckedChanged += (s, e) => UpdateFilterSummary();
+            chkSystemFields.CheckedChanged += (s, e) => UpdateFilterSummary();
+            filters.Controls.Add(chkCustomOnly);
+            filters.Controls.Add(chkSystemFields);
 
-            left.Controls.Add(Section("3", "Fine-tune (optional)"));
+            filters.Controls.Add(SubHeading("Thresholds (hover for help)"));
             nudFuzzy = Nud(0.5m, 1m, 0.85m, 2, 0.05m);
             nudOptSet = Nud(0.5m, 1m, 0.80m, 2, 0.05m);
             nudUtil = Nud(1, 100, 50, 0, 5);
             nudSample = Nud(0, 5000000, 50000, 0, 10000);
-            AddSetting(left, "Field-name match strictness (report 1)", nudFuzzy, "0.50 - 1.00. Higher = only very similar names are grouped.");
-            AddSetting(left, "Option-set match strictness (report 2)", nudOptSet, "Share of identical labels needed to call two option sets similar.");
-            AddSetting(left, "Flag text fields using less than (%) (report 3)", nudUtil, "Fields whose longest value uses less than this % of the max length are flagged.");
-            AddSetting(left, "Max records read per table (report 3)", nudSample, "0 = read everything. Lower is faster on big tables.");
+            var settings = new TableLayoutPanel { ColumnCount = 2, AutoSize = true, Width = LeftWidth, Margin = new Padding(0) };
+            settings.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, LeftWidth - 96));
+            settings.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 96));
+            AddSetting(settings, "Field-name match strictness (1)", nudFuzzy, "Report 1. 0.50 - 1.00. Higher = only very similar field names are grouped.");
+            AddSetting(settings, "Option-set match strictness (2)", nudOptSet, "Report 2. Share of identical labels needed to call two option sets similar.");
+            AddSetting(settings, "Flag length use below % (3)", nudUtil, "Report 3. Text fields whose longest value uses less than this % of the max length are flagged.");
+            AddSetting(settings, "Max records per table (3)", nudSample, "Report 3. Records read per table. 0 = read everything. Lower is faster on big tables.");
+            filters.Controls.Add(settings);
+            UpdateFilterSummary();
 
-            left.Controls.Add(Section("4", "Run a report"));
+            // Step 3 - run (2 x 2 grid)
+            left.Controls.Add(Section("3", "Run a report"));
+            var runGrid = new TableLayoutPanel { ColumnCount = 2, RowCount = 2, AutoSize = true, Margin = new Padding(0) };
             for (int i = 0; i < defs.Length; i++)
             {
                 int idx = i;
                 var b = ColorButton(defs[i].RunText, defs[i].Accent, (s, e) => ExecuteMethod(() => Run(idx)));
-                b.TextAlign = ContentAlignment.MiddleLeft;
-                tip.SetToolTip(b, defs[i].Summary);
-                left.Controls.Add(b);
-                var h = Hint(defs[i].RunHint);
-                h.Margin = new Padding(3, 0, 3, 6);
-                left.Controls.Add(h);
+                b.Width = LeftWidth / 2;
+                b.Height = 34;
+                tip.SetToolTip(b, $"{defs[i].Name}: {defs[i].Summary}");
+                runGrid.Controls.Add(b, i % 2, i / 2);
             }
-            btnCancel = ColorButton("■   Cancel running report", Theme.Danger, (s, e) => cts?.Cancel());
+            left.Controls.Add(runGrid);
+            btnCancel = ColorButton("■  Cancel running report", Theme.Danger, (s, e) => cts?.Cancel());
+            btnCancel.Height = 26;
             btnCancel.Enabled = false;
             left.Controls.Add(btnCancel);
 
-            left.Controls.Add(Section("5", "Export & clean-up"));
-            var export = ColorButton("Export current view to CSV (Excel)", Color.FromArgb(16, 124, 16), (s, e) => Export());
-            tip.SetToolTip(export, "Saves the rows currently shown on the selected tab, including any search or card filter.");
-            left.Controls.Add(export);
-            chkEnableScript = Check("Enable delete-script generation", false, "Safety switch for the button below.");
-            left.Controls.Add(chkEnableScript);
-            var script = ColorButton("Generate delete script (not executed)", Color.FromArgb(121, 119, 117), (s, e) => GenerateScript());
+            // Step 4 - export & clean-up
+            left.Controls.Add(Section("4", "Export & clean-up"));
+            var row = new FlowLayoutPanel { FlowDirection = FlowDirection.LeftToRight, WrapContents = false, AutoSize = true, Margin = new Padding(0) };
+            var export = ColorButton("Export to CSV", Color.FromArgb(16, 124, 16), (s, e) => Export());
+            export.Width = LeftWidth / 2;
+            tip.SetToolTip(export, "Saves the rows currently shown on the selected tab (search and card filter included) as a CSV you can open in Excel.");
+            var script = ColorButton("Delete script", Color.FromArgb(121, 119, 117), (s, e) => GenerateScript());
+            script.Width = LeftWidth / 2;
             tip.SetToolTip(script, "Writes a PowerShell file for the 'Safe to delete' rows of report 4. Every command is commented out; nothing is deleted.");
-            left.Controls.Add(script);
-
-            left.Controls.Add(Section("", "Colour key"));
-            foreach (Severity sev in Enum.GetValues(typeof(Severity)))
-                left.Controls.Add(LegendChip(sev));
+            row.Controls.Add(export);
+            row.Controls.Add(script);
+            left.Controls.Add(row);
+            chkEnableScript = Check("Enable delete-script generation", false, "Safety switch for the 'Delete script' button.");
+            left.Controls.Add(chkEnableScript);
 
             return left;
         }
@@ -176,7 +199,7 @@ namespace SolutionAnalyzerFieldHealthChecker
             var d = defs[i];
             var page = new TabPage(d.TabText) { BackColor = Color.White, Padding = new Padding(0) };
 
-            var layout = new TableLayoutPanel { Dock = DockStyle.Fill, ColumnCount = 1, RowCount = 4, BackColor = Color.White, Padding = new Padding(12, 8, 12, 6) };
+            var layout = new TableLayoutPanel { Dock = DockStyle.Fill, ColumnCount = 1, RowCount = 4, BackColor = Color.White, Padding = new Padding(8, 4, 8, 4) };
             layout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
             layout.RowStyles.Add(new RowStyle(SizeType.AutoSize));
             layout.RowStyles.Add(new RowStyle(SizeType.AutoSize));
@@ -184,36 +207,32 @@ namespace SolutionAnalyzerFieldHealthChecker
             layout.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
             page.Controls.Add(layout);
 
-            // what this report is and how to read it
-            var info = new FlowLayoutPanel { FlowDirection = FlowDirection.TopDown, WrapContents = false, AutoSize = true, Dock = DockStyle.Fill, Margin = new Padding(0) };
-            var title = new System.Windows.Forms.Label { Text = d.Name, Font = Theme.Title, ForeColor = d.Accent, AutoSize = true, Margin = new Padding(0, 0, 0, 2) };
-            var summary = new System.Windows.Forms.Label { Text = d.Summary, AutoSize = true, MaximumSize = new Size(900, 0), ForeColor = Theme.Text, Margin = new Padding(0, 0, 0, 4) };
+            // one-line title + summary, "how to read" hidden behind a link
+            var head = new FlowLayoutPanel { FlowDirection = FlowDirection.LeftToRight, WrapContents = true, AutoSize = true, Dock = DockStyle.Fill, Margin = new Padding(0) };
+            head.Controls.Add(new System.Windows.Forms.Label { Text = d.Name, Font = Theme.Section, ForeColor = d.Accent, AutoSize = true, UseMnemonic = false, Margin = new Padding(0, 2, 8, 0) });
+            head.Controls.Add(new System.Windows.Forms.Label { Text = d.Summary, AutoSize = true, ForeColor = Theme.Muted, UseMnemonic = false, Margin = new Padding(0, 4, 8, 0) });
             var how = new System.Windows.Forms.Label
             {
-                Text = "How to read it:  " + d.HowToRead, AutoSize = true, ForeColor = Theme.Text, BackColor = Theme.BrandSoft,
-                Padding = new Padding(8, 6, 8, 6), Margin = new Padding(0, 0, 0, 6), MaximumSize = new Size(900, 0)
+                Text = d.HowToRead, AutoSize = true, ForeColor = Theme.Text, BackColor = Theme.BrandSoft, UseMnemonic = false,
+                Padding = new Padding(8, 5, 8, 5), Margin = new Padding(0, 2, 0, 2), MaximumSize = new Size(900, 0), Visible = false
             };
-            info.Controls.Add(title); info.Controls.Add(summary); info.Controls.Add(how);
-            layout.Controls.Add(info, 0, 0);
-            page.Resize += (s, e) =>
-            {
-                int w = Math.Max(200, page.ClientSize.Width - 30);
-                summary.MaximumSize = new Size(w, 0);
-                how.MaximumSize = new Size(w, 0);
-            };
+            var link = new LinkLabel { Text = "How to read this report ▸", AutoSize = true, LinkColor = Theme.Brand, Margin = new Padding(0, 4, 0, 0) };
+            link.LinkClicked += (s, e) => { how.Visible = !how.Visible; link.Text = "How to read this report " + (how.Visible ? "▾" : "▸"); };
+            head.Controls.Add(link);
+            layout.Controls.Add(head, 0, 0);
+            layout.Controls.Add(how, 0, 1);
+            page.Resize += (s, e) => how.MaximumSize = new Size(Math.Max(200, page.ClientSize.Width - 24), 0);
 
-            // summary cards (filled after a run)
-            cardPanels[i] = new FlowLayoutPanel { AutoSize = true, Dock = DockStyle.Fill, WrapContents = true, Margin = new Padding(0, 0, 0, 4) };
-            layout.Controls.Add(cardPanels[i], 0, 1);
-
-            // search bar
-            var bar = new FlowLayoutPanel { AutoSize = true, Dock = DockStyle.Fill, WrapContents = false, Margin = new Padding(0, 0, 0, 4) };
-            bar.Controls.Add(new System.Windows.Forms.Label { Text = "Search:", AutoSize = true, Margin = new Padding(0, 6, 4, 0), ForeColor = Theme.Muted });
-            searches[i] = new TextBox { Width = 280 };
+            // summary cards + search on one row
+            var bar = new FlowLayoutPanel { AutoSize = true, Dock = DockStyle.Fill, WrapContents = true, Margin = new Padding(0, 2, 0, 4) };
+            cardPanels[i] = new FlowLayoutPanel { AutoSize = true, WrapContents = false, Margin = new Padding(0, 0, 8, 0) };
+            bar.Controls.Add(cardPanels[i]);
+            bar.Controls.Add(new System.Windows.Forms.Label { Text = "Search:", AutoSize = true, Margin = new Padding(0, 12, 4, 0), ForeColor = Theme.Muted });
+            searches[i] = new TextBox { Width = 220, Margin = new Padding(0, 9, 0, 0) };
             searches[i].TextChanged += (s, e) => ApplyFilter(i);
             tip.SetToolTip(searches[i], "Type any part of a table, field or value to filter the rows below.");
             bar.Controls.Add(searches[i]);
-            counts[i] = new System.Windows.Forms.Label { AutoSize = true, Margin = new Padding(12, 6, 0, 0), ForeColor = Theme.Muted };
+            counts[i] = new System.Windows.Forms.Label { AutoSize = true, Margin = new Padding(10, 12, 0, 0), ForeColor = Theme.Muted };
             bar.Controls.Add(counts[i]);
             layout.Controls.Add(bar, 0, 2);
 
@@ -223,8 +242,8 @@ namespace SolutionAnalyzerFieldHealthChecker
             grids[i].Visible = false;
             emptyStates[i] = new System.Windows.Forms.Label
             {
-                Dock = DockStyle.Fill, TextAlign = ContentAlignment.MiddleCenter, ForeColor = Theme.Muted, Font = Theme.Section,
-                Text = $"No results yet.\n\nClick  \"{d.RunText.Trim()}\"  on the left to run this report."
+                Dock = DockStyle.Fill, TextAlign = ContentAlignment.MiddleCenter, ForeColor = Theme.Muted, Font = Theme.Section, UseMnemonic = false,
+                Text = $"No results yet.\n\nClick  \"{d.RunText}\"  on the left to run this report."
             };
             host.Controls.Add(grids[i]);
             host.Controls.Add(emptyStates[i]);
@@ -232,22 +251,36 @@ namespace SolutionAnalyzerFieldHealthChecker
             return page;
         }
 
+        /// <summary>Activity log (70%) with the colour key beside it (30%).</summary>
         Control BuildLogPanel()
         {
-            var panel = new Panel { Dock = DockStyle.Fill, BackColor = Theme.PanelBack };
+            var split = new TableLayoutPanel { Dock = DockStyle.Fill, ColumnCount = 2, RowCount = 1, BackColor = Theme.PanelBack, Margin = new Padding(0) };
+            split.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 70));
+            split.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 30));
+            split.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
+
+            var logPanel = new Panel { Dock = DockStyle.Fill, Margin = new Padding(0, 0, 4, 0) };
             txtLog = new TextBox
             {
                 Dock = DockStyle.Fill, Multiline = true, ReadOnly = true, ScrollBars = ScrollBars.Vertical,
                 BorderStyle = BorderStyle.None, BackColor = Theme.PanelBack, ForeColor = Theme.Muted, Font = Theme.Mono
             };
-            var head = new System.Windows.Forms.Label
+            logPanel.Controls.Add(txtLog);
+            logPanel.Controls.Add(PanelHeader("Activity log"));
+            split.Controls.Add(logPanel, 0, 0);
+
+            var sevs = (Severity[])Enum.GetValues(typeof(Severity));
+            var legend = new TableLayoutPanel { Dock = DockStyle.Fill, ColumnCount = 1, RowCount = sevs.Length + 1, Margin = new Padding(0) };
+            legend.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
+            legend.RowStyles.Add(new RowStyle(SizeType.Absolute, 22));
+            legend.Controls.Add(PanelHeader("Colour key"), 0, 0);
+            for (int k = 0; k < sevs.Length; k++)
             {
-                Dock = DockStyle.Top, Height = 22, Text = "  Activity log", Font = Theme.Bold, ForeColor = Theme.Brand,
-                TextAlign = ContentAlignment.MiddleLeft, BackColor = Theme.BrandSoft
-            };
-            panel.Controls.Add(txtLog);
-            panel.Controls.Add(head);
-            return panel;
+                legend.RowStyles.Add(new RowStyle(SizeType.Percent, 100f / sevs.Length));
+                legend.Controls.Add(LegendChip(sevs[k]), 0, k + 1);
+            }
+            split.Controls.Add(legend, 1, 0);
+            return split;
         }
 
         void SetSplitters()
@@ -255,8 +288,8 @@ namespace SolutionAnalyzerFieldHealthChecker
             try
             {
                 mainSplit.Panel1MinSize = 220;
-                mainSplit.SplitterDistance = LeftWidth + 45;
-                rightSplit.SplitterDistance = Math.Max(rightSplit.Panel1MinSize, rightSplit.Height - 150);
+                mainSplit.SplitterDistance = LeftWidth + 40;
+                rightSplit.SplitterDistance = Math.Max(rightSplit.Panel1MinSize, rightSplit.Height - 135);
             }
             catch (InvalidOperationException) { } // control too small to honour the sizes - keep defaults
         }
@@ -275,21 +308,50 @@ namespace SolutionAnalyzerFieldHealthChecker
         // ---------------- small UI helpers ----------------
         static System.Windows.Forms.Label Section(string number, string text) => new System.Windows.Forms.Label
         {
-            Text = string.IsNullOrEmpty(number) ? text : $"Step {number}  ·  {text}",
-            AutoSize = true, Font = Theme.Section, ForeColor = Theme.Brand, Margin = new Padding(3, 14, 3, 4)
+            Text = $"Step {number}  ·  {text}", AutoSize = true, Font = Theme.Section, ForeColor = Theme.Brand, UseMnemonic = false,
+            Margin = new Padding(3, 10, 3, 3)
+        };
+
+        static System.Windows.Forms.Label SubHeading(string text) => new System.Windows.Forms.Label
+        {
+            Text = text, AutoSize = true, Font = Theme.Bold, ForeColor = Theme.Text, UseMnemonic = false, Margin = new Padding(3, 6, 3, 2)
         };
 
         static System.Windows.Forms.Label Hint(string text) => new System.Windows.Forms.Label
         {
-            Text = text, AutoSize = true, MaximumSize = new Size(LeftWidth, 0), Font = Theme.Small, ForeColor = Theme.Muted, Margin = new Padding(3, 2, 3, 4)
+            Text = text, AutoSize = true, MaximumSize = new Size(LeftWidth, 0), Font = Theme.Small, ForeColor = Theme.Muted, UseMnemonic = false,
+            Margin = new Padding(3, 1, 3, 2)
         };
+
+        static System.Windows.Forms.Label PanelHeader(string text) => new System.Windows.Forms.Label
+        {
+            Dock = DockStyle.Top, Height = 22, Text = "  " + text, Font = Theme.Bold, ForeColor = Theme.Brand,
+            TextAlign = ContentAlignment.MiddleLeft, BackColor = Theme.BrandSoft, Margin = new Padding(0)
+        };
+
+        /// <summary>Section header that shows / hides <paramref name="body"/> when clicked.</summary>
+        Button ToggleHeader(string number, string text, Control body)
+        {
+            string Caption() => $"{(body.Visible ? "▾" : "▸")}  Step {number}  ·  {text}";
+            var b = new Button
+            {
+                Width = LeftWidth, Height = 28, FlatStyle = FlatStyle.Flat, BackColor = Theme.PanelBack, ForeColor = Theme.Brand, Font = Theme.Section,
+                TextAlign = ContentAlignment.MiddleLeft, UseMnemonic = false, Cursor = Cursors.Hand, Margin = new Padding(0, 8, 3, 0), Padding = new Padding(0)
+            };
+            b.FlatAppearance.BorderSize = 0;
+            b.FlatAppearance.MouseOverBackColor = Theme.BrandSoft;
+            b.Text = Caption();
+            b.Click += (s, e) => { body.Visible = !body.Visible; b.Text = Caption(); };
+            tip.SetToolTip(b, "Click to show or hide the scope and threshold settings.");
+            return b;
+        }
 
         static Button ColorButton(string text, Color back, EventHandler click)
         {
             var b = new Button
             {
-                Text = text, Width = LeftWidth, Height = 32, FlatStyle = FlatStyle.Flat, BackColor = back, ForeColor = Color.White,
-                Font = Theme.Bold, Cursor = Cursors.Hand, Padding = new Padding(6, 0, 6, 0), Margin = new Padding(3, 3, 3, 3)
+                Text = text, Width = LeftWidth, Height = 30, FlatStyle = FlatStyle.Flat, BackColor = back, ForeColor = Color.White,
+                Font = Theme.Bold, Cursor = Cursors.Hand, UseMnemonic = false, Padding = new Padding(2, 0, 2, 0), Margin = new Padding(2)
             };
             b.FlatAppearance.BorderSize = 0;
             b.FlatAppearance.MouseOverBackColor = ControlPaint.Light(back, 0.25f);
@@ -300,31 +362,51 @@ namespace SolutionAnalyzerFieldHealthChecker
 
         CheckBox Check(string text, bool on, string help)
         {
-            var c = new CheckBox { Text = text, Checked = on, AutoSize = true, Margin = new Padding(3, 4, 3, 0) };
+            var c = new CheckBox { Text = text, Checked = on, AutoSize = true, UseMnemonic = false, Margin = new Padding(3, 3, 3, 0) };
             tip.SetToolTip(c, help);
             return c;
         }
 
         static NumericUpDown Nud(decimal min, decimal max, decimal val, int dp, decimal inc) =>
-            new NumericUpDown { Minimum = min, Maximum = max, Value = val, DecimalPlaces = dp, Increment = inc, Width = 110, ThousandsSeparator = true };
+            new NumericUpDown { Minimum = min, Maximum = max, Value = val, DecimalPlaces = dp, Increment = inc, Width = 90, ThousandsSeparator = true };
 
-        void AddSetting(FlowLayoutPanel parent, string label, NumericUpDown input, string help)
+        void AddSetting(TableLayoutPanel grid, string label, NumericUpDown input, string help)
         {
-            parent.Controls.Add(new System.Windows.Forms.Label { Text = label, AutoSize = true, MaximumSize = new Size(LeftWidth, 0), Margin = new Padding(3, 6, 3, 2) });
-            parent.Controls.Add(input);
-            parent.Controls.Add(Hint(help));
+            var l = new System.Windows.Forms.Label { Text = label, AutoSize = true, Anchor = AnchorStyles.Left, UseMnemonic = false, Margin = new Padding(3, 0, 0, 0) };
+            input.Margin = new Padding(2);
+            input.ValueChanged += (s, e) => UpdateFilterSummary();
+            grid.Controls.Add(l);
+            grid.Controls.Add(input);
+            tip.SetToolTip(l, help);
             tip.SetToolTip(input, help);
         }
 
-        static Control LegendChip(Severity sev)
+        Control LegendChip(Severity sev)
         {
             var l = new System.Windows.Forms.Label
             {
-                Text = $"●  {Theme.Name(sev)}  -  {Theme.Meaning(sev)}", AutoSize = false, Width = LeftWidth, Height = 24,
+                Text = $"●  {Theme.Name(sev)}:  {Theme.Meaning(sev)}", Dock = DockStyle.Fill, AutoEllipsis = true,
                 TextAlign = ContentAlignment.MiddleLeft, BackColor = Theme.Back(sev), ForeColor = Theme.Fore(sev),
-                Font = Theme.Small, Margin = new Padding(3, 1, 3, 1), Padding = new Padding(6, 0, 0, 0)
+                Font = Theme.Small, Margin = new Padding(0, 1, 0, 0), Padding = new Padding(6, 0, 0, 0)
             };
+            tip.SetToolTip(l, $"{Theme.Name(sev)}: {Theme.Meaning(sev)}");
             return l;
+        }
+
+        /// <summary>One-line description of the current scope / thresholds shown under the collapsed Step 2 header.</summary>
+        void UpdateFilterSummary()
+        {
+            if (lblFilterSummary == null || nudSample == null) return;
+            int sols = clbSolutions.CheckedItems.Count;
+            var parts = new List<string>
+            {
+                sols == 0 ? "Whole environment" : $"{sols} solution(s)",
+                chkCustomOnly.Checked ? "custom tables only" : "all tables",
+                chkSystemFields.Checked ? "custom + system fields" : "custom fields"
+            };
+            bool tuned = nudFuzzy.Value != 0.85m || nudOptSet.Value != 0.80m || nudUtil.Value != 50 || nudSample.Value != 50000;
+            if (tuned) parts.Add("custom thresholds");
+            lblFilterSummary.Text = string.Join(" · ", parts);
         }
 
         void SetLoadStatus(string text, Color color)
@@ -451,8 +533,9 @@ namespace SolutionAnalyzerFieldHealthChecker
         {
             var b = new Button
             {
-                Text = $"{count:N0}\n{label}", Tag = filter, Size = new Size(170, 54), FlatStyle = FlatStyle.Flat, BackColor = back,
-                ForeColor = fore, Font = Theme.Bold, Cursor = Cursors.Hand, Margin = new Padding(0, 0, 8, 4)
+                Text = $"{count:N0}\n{label}", Tag = filter, AutoSize = true, MinimumSize = new Size(100, 38), Padding = new Padding(6, 0, 6, 0),
+                FlatStyle = FlatStyle.Flat, BackColor = back, UseMnemonic = false,
+                ForeColor = fore, Font = Theme.Bold, Cursor = Cursors.Hand, Margin = new Padding(0, 0, 6, 0)
             };
             b.FlatAppearance.BorderColor = fore;
             b.FlatAppearance.MouseOverBackColor = ControlPaint.Dark(back, 0.03f);
@@ -574,7 +657,7 @@ namespace SolutionAnalyzerFieldHealthChecker
             grids[i].Visible = any;
             emptyStates[i].Visible = !any;
             if (dt == null)
-                emptyStates[i].Text = $"No results yet.\n\nClick  \"{defs[i].RunText.Trim()}\"  on the left to run this report.";
+                emptyStates[i].Text = $"No results yet.\n\nClick  \"{defs[i].RunText}\"  on the left to run this report.";
             else if (!any)
                 emptyStates[i].Text = "✔ Nothing found - no issues of this kind in the selected scope.";
             UpdateCount(i);

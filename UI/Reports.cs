@@ -16,12 +16,12 @@ namespace SolutionAnalyzerFieldHealthChecker.UI
     /// <summary>Plain-English description of one report and how to colour its results.</summary>
     public class ReportDef
     {
-        public string Number, Name, RunHint, Summary, HowToRead, StatusColumn;
+        public string Number, Name, ShortName, Summary, HowToRead, StatusColumn;
         public Color Accent;
         public StatusRule[] Rules;
 
         public string TabText => $"{Number}  {Name}";
-        public string RunText => $"▶   {Number}  ·  {Name}";
+        public string RunText => $"{Number} · {ShortName}";
 
         public StatusRule Match(string value) =>
             Rules.FirstOrDefault(r => (value ?? "").StartsWith(r.Prefix, StringComparison.OrdinalIgnoreCase));
@@ -33,8 +33,7 @@ namespace SolutionAnalyzerFieldHealthChecker.UI
         {
             new ReportDef
             {
-                Number = "1", Name = "Similar fields + fill %", Accent = Color.FromArgb(0, 120, 130), StatusColumn = "Flag",
-                RunHint = "Look-alike columns and how much data each one holds.",
+                Number = "1", Name = "Similar fields + fill %", ShortName = "Similar fields", Accent = Color.FromArgb(0, 120, 130), StatusColumn = "Flag",
                 Summary = "Finds columns on the same table that look like copies of each other (for example msemr_subject vs xyz_subject) and shows how many records actually use each one.",
                 HowToRead = "Rows with the same Group key are one set of look-alike fields.  Merge candidate = more than one field in the set holds data, consider keeping just one.  Empty = never filled in, candidate for removal.  Fill % = share of records that have a value.",
                 Rules = new[]
@@ -46,8 +45,7 @@ namespace SolutionAnalyzerFieldHealthChecker.UI
             },
             new ReportDef
             {
-                Number = "2", Name = "Duplicate option sets", Accent = Color.FromArgb(107, 79, 160), StatusColumn = "Check",
-                RunHint = "Choice fields that repeat each other or a global option set.",
+                Number = "2", Name = "Duplicate option sets", ShortName = "Option sets", Accent = Color.FromArgb(107, 79, 160), StatusColumn = "Check",
                 Summary = "Finds choice (option set) fields that repeat each other: the same name twice on one table, local option sets with nearly identical labels on different tables, and local sets that copy an existing global option set.",
                 HowToRead = "Similarity % = share of option labels the two sets have in common.  Matches global = switch the field to that global option set so the values stay in sync.  Similar local = consider one shared global option set for both fields.",
                 Rules = new[]
@@ -59,8 +57,7 @@ namespace SolutionAnalyzerFieldHealthChecker.UI
             },
             new ReportDef
             {
-                Number = "3", Name = "Field length usage", Accent = Color.FromArgb(196, 89, 17), StatusColumn = "Recommendation",
-                RunHint = "Text columns sized far bigger than the data stored in them.",
+                Number = "3", Name = "Field length usage", ShortName = "Field length", Accent = Color.FromArgb(196, 89, 17), StatusColumn = "Recommendation",
                 Summary = "Compares each text column's configured maximum length with the longest value actually stored in it.",
                 HowToRead = "Utilisation % = longest value used ÷ configured max.  Over-provisioned = real data uses less than your threshold, size similar new columns smaller.  P95 = 95% of values are this long or shorter.  Note: Dataverse cannot shrink an existing column, so treat this as a design review.",
                 Rules = new[]
@@ -72,8 +69,7 @@ namespace SolutionAnalyzerFieldHealthChecker.UI
             },
             new ReportDef
             {
-                Number = "4", Name = "Unused fields", Accent = Color.FromArgb(0, 99, 177), StatusColumn = "Status",
-                RunHint = "Empty custom columns, with dependency and reference checks.",
+                Number = "4", Name = "Unused fields", ShortName = "Unused fields", Accent = Color.FromArgb(0, 99, 177), StatusColumn = "Status",
                 Summary = "Lists custom columns that hold no data in any record, then checks their dependencies and whether forms, views, charts, workflows, business rules or plug-in steps mention them.",
                 HowToRead = "Safe to delete = empty, no dependencies and no references found.  Review = empty, but something still points at it (see Review notes, Dependency details and Possible references).  JavaScript web resources, Power Automate flows, canvas apps and PCF controls are NOT scanned, check those yourself.",
                 Rules = new[]
