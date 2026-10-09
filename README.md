@@ -1,4 +1,4 @@
-# Solution Analyzer (XrmToolBox plugin)
+# Solution Analyzer & Field Health Checker (XrmToolBox plugin)
 
 **Author:** Shoaib Khan
 

@@ -5,7 +5,7 @@ using XrmToolBox.Extensibility.Interfaces;
 namespace SolutionAnalyzer
 {
     [Export(typeof(IXrmToolBoxPlugin)),
-     ExportMetadata("Name", "Solution Analyzer"),
+     ExportMetadata("Name", "Solution Analyzer & Field Health Checker"),
      ExportMetadata("Description", "Data-model quality reports: similar fields, duplicate option sets, field length usage, unused custom fields."),
      ExportMetadata("SmallImageBase64", null),
      ExportMetadata("BigImageBase64", null),

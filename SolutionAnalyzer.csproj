@@ -6,6 +6,8 @@
     <AssemblyName>SolutionAnalyzer</AssemblyName>
     <RootNamespace>SolutionAnalyzer</RootNamespace>
     <OutputType>Library</OutputType>
+    <Product>Solution Analyzer &amp; Field Health Checker</Product>
+    <Title>Solution Analyzer &amp; Field Health Checker</Title>
     <Authors>Shoaib Khan</Authors>
     <Company>Shoaib Khan</Company>
     <Copyright>Copyright © Shoaib Khan</Copyright>
