@@ -40,6 +40,7 @@ namespace SolutionAnalyzerFieldHealthChecker
         readonly HashSet<string> pickedTables = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         readonly System.Windows.Forms.Timer tableRefresh = new System.Windows.Forms.Timer { Interval = 600 };  // debounce solution ticks
         bool fillingTables;
+        OptionSetDetails optionDetails;   // report 2: option values of the clicked row
         TabControl tabs;
         TextBox txtLog;
         readonly ToolTip tip = new ToolTip { AutoPopDelay = 20000, InitialDelay = 300 };
@@ -376,8 +377,31 @@ namespace SolutionAnalyzerFieldHealthChecker
                 Dock = DockStyle.Fill, TextAlign = ContentAlignment.MiddleCenter, ForeColor = Theme.Muted, Font = Theme.Section, UseMnemonic = false,
                 Text = $"No results yet.\n\nClick  \"{d.RunText}\"  on the left to run this report."
             };
-            host.Controls.Add(grids[i]);
-            host.Controls.Add(emptyStates[i]);
+            if (i == 1)
+            {
+                // report 2: grid on top, option values of the clicked row underneath
+                var split = new SplitContainer { Dock = DockStyle.Fill, Orientation = Orientation.Horizontal, SplitterWidth = 5, BackColor = Theme.GridLine };
+                split.Panel1.BackColor = Color.White;
+                split.Panel2.BackColor = Color.White;
+                optionDetails = new OptionSetDetails();
+                split.Panel1.Controls.Add(grids[i]);
+                split.Panel1.Controls.Add(emptyStates[i]);
+                split.Panel2.Controls.Add(optionDetails);
+                bool sized = false;   // give the grid 60% once; after that the user's splitter position is kept
+                page.Resize += (s, e) =>
+                {
+                    if (sized || split.Height < 200) return;
+                    try { split.SplitterDistance = (int)(split.Height * 0.6); sized = true; } catch (InvalidOperationException) { }
+                };
+                grids[i].SelectionChanged += (s, e) =>
+                    optionDetails.ShowRow(cache, grids[i].CurrentRow?.DataBoundItem as DataRowView);
+                host.Controls.Add(split);
+            }
+            else
+            {
+                host.Controls.Add(grids[i]);
+                host.Controls.Add(emptyStates[i]);
+            }
             layout.Controls.Add(host, 0, 3);
             return page;
         }
