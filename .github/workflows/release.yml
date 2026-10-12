@@ -1,0 +1,52 @@
+# Builds the plugin and publishes it to nuget.org (XrmToolBox Tool Library) using NuGet Trusted Publishing.
+# No API key is stored: NuGet/login exchanges GitHub's OIDC token for a short-lived key.
+#
+# To release: push a tag that starts with "v" (e.g. git tag v1.1 && git push origin v1.1),
+# or run this workflow by hand from the Actions tab.
+# nuget.org trusted publishing policy must point at: owner shoaib1-OxDh, repo Solution_Analyzer, workflow release.yml.
+name: Release to NuGet
+
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write   # required for Trusted Publishing
+
+jobs:
+  publish:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+
+      - name: Build and pack
+        run: dotnet pack SolutionAnalyzerFieldHealthChecker.csproj -c Release -o out
+
+      - name: Show package contents
+        shell: pwsh
+        run: |
+          Get-ChildItem out\*.nupkg | ForEach-Object {
+            Write-Host "Package: $($_.Name)"
+            Add-Type -AssemblyName System.IO.Compression.FileSystem
+            [IO.Compression.ZipFile]::OpenRead($_.FullName).Entries | ForEach-Object { "  " + $_.FullName }
+          }
+
+      - name: Log in to nuget.org (Trusted Publishing)
+        id: login
+        uses: NuGet/login@v1
+        with:
+          user: Shoaib_khan   # nuget.org profile name (not the email)
+
+      - name: Push to nuget.org
+        run: dotnet nuget push "out\*.nupkg" --api-key ${{ steps.login.outputs.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json --skip-duplicate
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: nuget-package
+          path: out/*.nupkg

@@ -1,0 +1,50 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net48</TargetFramework>
+    <UseWindowsForms>true</UseWindowsForms>
+    <LangVersion>latest</LangVersion>
+    <AssemblyName>SolutionAnalyzerFieldHealthChecker</AssemblyName>
+    <RootNamespace>SolutionAnalyzerFieldHealthChecker</RootNamespace>
+    <OutputType>Library</OutputType>
+    <Product>Solution Analyzer &amp; Field Health Checker</Product>
+    <Title>Solution Analyzer &amp; Field Health Checker</Title>
+    <Authors>Shoaib Khan</Authors>
+    <Company>Shoaib Khan</Company>
+    <Copyright>Copyright © Shoaib Khan</Copyright>
+  </PropertyGroup>
+  <!-- Build version is stamped from the build date/time so every build gets a new, increasing number:
+       1.<year>.<MMdd>.<HHmm> (local time), e.g. a build on 9 Oct 2026 at 14:35 is 1.2026.1009.1435.
+       This is the version XrmToolBox shows under the tool name. Change the leading "1" for a major release. -->
+  <PropertyGroup>
+    <BuildYear>$([System.DateTime]::Now.Year)</BuildYear>
+    <BuildMonthDay>$([MSBuild]::Add($([MSBuild]::Multiply($([System.DateTime]::Now.Month), 100)), $([System.DateTime]::Now.Day)))</BuildMonthDay>
+    <BuildTime>$([MSBuild]::Add($([MSBuild]::Multiply($([System.DateTime]::Now.Hour), 100)), $([System.DateTime]::Now.Minute)))</BuildTime>
+    <Version>1.$(BuildYear).$(BuildMonthDay).$(BuildTime)</Version>
+    <AssemblyVersion>$(Version)</AssemblyVersion>
+    <FileVersion>$(Version)</FileVersion>
+    <InformationalVersion>$(Version)</InformationalVersion>
+  </PropertyGroup>
+  <!-- NuGet package for the XrmToolBox Tool Library: "dotnet pack -c Release" uses the .nuspec
+       (plugin DLL in lib\net48\Plugins, dependency on XrmToolBox). The package version = build version above. -->
+  <PropertyGroup>
+    <NuspecFile>SolutionAnalyzerFieldHealthChecker.nuspec</NuspecFile>
+    <NuspecBasePath>$(MSBuildProjectDirectory)</NuspecBasePath>
+    <NuspecProperties>version=$(Version);configuration=$(Configuration)</NuspecProperties>
+  </PropertyGroup>
+  <ItemGroup>
+    <!-- Official XrmToolBox plugin package (brings in the Dataverse SDK assemblies).
+         When you change this version, also update the XrmToolBox dependency in the .nuspec. -->
+    <PackageReference Include="XrmToolBoxPackage" Version="1.2025.7.71" />
+    <Reference Include="System.ComponentModel.Composition" />
+  </ItemGroup>
+  <!-- After each build, upload (copy) the plugin DLL into the local XrmToolBox Plugins folder:
+       %APPDATA%\MscrmTools\XrmToolBox\Plugins (i.e. C:\Users\<you>\AppData\Roaming\MscrmTools\XrmToolBox\Plugins).
+       Restart XrmToolBox to pick up the new build. Skipped on non-Windows machines and on build servers (CI). -->
+  <Target Name="CopyToXrmToolBoxPlugins" AfterTargets="Build" Condition="'$(OS)' == 'Windows_NT' And '$(CI)' != 'true'">
+    <PropertyGroup>
+      <XrmToolBoxPluginsDir>$(APPDATA)\MscrmTools\XrmToolBox\Plugins</XrmToolBoxPluginsDir>
+    </PropertyGroup>
+    <MakeDir Directories="$(XrmToolBoxPluginsDir)" />
+    <Copy SourceFiles="$(TargetPath)" DestinationFolder="$(XrmToolBoxPluginsDir)" SkipUnchangedFiles="true" ContinueOnError="true" />
+  </Target>
+</Project>
