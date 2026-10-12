@@ -19,6 +19,7 @@ namespace SolutionAnalyzerFieldHealthChecker
     public class MainControl : PluginControlBase
     {
         class SolItem { public Guid Id; public string Text; public override string ToString() => Text; }
+        class TableItem { public string Name, Text; public override string ToString() => Text; }
 
         const int LeftWidth = 290;
 
@@ -30,7 +31,15 @@ namespace SolutionAnalyzerFieldHealthChecker
         CheckBox chkCustomOnly, chkSystemFields, chkEnableScript;
         NumericUpDown nudFuzzy, nudOptSet, nudUtil, nudSample;
         Button btnCancel;
-        System.Windows.Forms.Label lblLoadStatus, lblFilterSummary;
+        System.Windows.Forms.Label lblLoadStatus, lblFilterSummary, lblTableCount;
+        RadioButton rbAllTables, rbPickTables;
+        FlowLayoutPanel tablePicker;
+        TextBox txtTableSearch;
+        CheckedListBox clbTables;
+        List<TableItem> tablesInScope = new List<TableItem>();
+        readonly HashSet<string> pickedTables = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        readonly System.Windows.Forms.Timer tableRefresh = new System.Windows.Forms.Timer { Interval = 600 };  // debounce solution ticks
+        bool fillingTables;
         TabControl tabs;
         TextBox txtLog;
         readonly ToolTip tip = new ToolTip { AutoPopDelay = 20000, InitialDelay = 300 };
@@ -56,7 +65,9 @@ namespace SolutionAnalyzerFieldHealthChecker
             {
                 cache = null;
                 clbSolutions.Items.Clear();
-                UpdateFilterSummary();
+                tablesInScope.Clear();
+                pickedTables.Clear();
+                FillTableList();
                 SetLoadStatus("Not loaded yet. Click the button above (the reports also load it automatically).", Theme.Muted);
             };
         }
@@ -134,14 +145,15 @@ namespace SolutionAnalyzerFieldHealthChecker
 
             filters.Controls.Add(SubHeading("Solutions (none ticked = whole environment)"));
             clbSolutions = new CheckedListBox { Width = LeftWidth, Height = 120, CheckOnClick = true, BorderStyle = BorderStyle.FixedSingle, IntegralHeight = false };
-            clbSolutions.ItemCheck += (s, e) => BeginInvoke(new Action(UpdateFilterSummary));
+            clbSolutions.ItemCheck += (s, e) => { BeginInvoke(new Action(UpdateFilterSummary)); RequestTableRefresh(); };
             filters.Controls.Add(clbSolutions);
             chkCustomOnly = Check("Custom tables only", true, "Skip out-of-the-box Microsoft tables.");
             chkSystemFields = Check("Include system (non-custom) fields", false, "Also analyse standard columns, not just custom ones.");
-            chkCustomOnly.CheckedChanged += (s, e) => UpdateFilterSummary();
+            chkCustomOnly.CheckedChanged += (s, e) => { UpdateFilterSummary(); RequestTableRefresh(); };
             chkSystemFields.CheckedChanged += (s, e) => UpdateFilterSummary();
             filters.Controls.Add(chkCustomOnly);
             filters.Controls.Add(chkSystemFields);
+            filters.Controls.Add(BuildTablePicker());
 
             filters.Controls.Add(SubHeading("Thresholds (hover for help)"));
             nudFuzzy = Nud(0.5m, 1m, 0.85m, 2, 0.05m);
@@ -192,6 +204,124 @@ namespace SolutionAnalyzerFieldHealthChecker
             left.Controls.Add(chkEnableScript);
 
             return left;
+        }
+
+        /// <summary>"All tables in scope" or a searchable tick-list of specific tables from the selected solutions.</summary>
+        Control BuildTablePicker()
+        {
+            var box = new FlowLayoutPanel { FlowDirection = FlowDirection.TopDown, WrapContents = false, AutoSize = true, Margin = new Padding(0) };
+            box.Controls.Add(SubHeading("Tables"));
+            rbAllTables = new RadioButton { Text = "All tables in scope", Checked = true, AutoSize = true, Margin = new Padding(3, 0, 12, 0) };
+            rbPickTables = new RadioButton { Text = "Specific tables", AutoSize = true, Margin = new Padding(3, 0, 3, 0) };
+            tip.SetToolTip(rbAllTables, "Analyse every table in the selected solutions (or the whole environment).");
+            tip.SetToolTip(rbPickTables, "Pick one or more tables from the selected solutions.");
+            var radios = new FlowLayoutPanel { FlowDirection = FlowDirection.LeftToRight, WrapContents = false, AutoSize = true, Margin = new Padding(0) };
+            radios.Controls.Add(rbAllTables);
+            radios.Controls.Add(rbPickTables);
+            box.Controls.Add(radios);
+
+            tablePicker = new FlowLayoutPanel { FlowDirection = FlowDirection.TopDown, WrapContents = false, AutoSize = true, Visible = false, Margin = new Padding(0) };
+            tablePicker.Controls.Add(Hint("Tables from the ticked solutions (or all, if none ticked). Type to search:"));
+            txtTableSearch = new TextBox { Width = LeftWidth, Margin = new Padding(3, 0, 3, 2) };
+            txtTableSearch.TextChanged += (s, e) => FillTableList();
+            tip.SetToolTip(txtTableSearch, "Filter the list by display name or logical name.");
+            tablePicker.Controls.Add(txtTableSearch);
+            clbTables = new CheckedListBox { Width = LeftWidth, Height = 150, CheckOnClick = true, BorderStyle = BorderStyle.FixedSingle, IntegralHeight = false };
+            clbTables.ItemCheck += (s, e) =>
+            {
+                if (fillingTables) return;
+                var t = (TableItem)clbTables.Items[e.Index];
+                if (e.NewValue == CheckState.Checked) pickedTables.Add(t.Name); else pickedTables.Remove(t.Name);
+                BeginInvoke(new Action(UpdateTableCount));
+            };
+            tablePicker.Controls.Add(clbTables);
+
+            var links = new FlowLayoutPanel { FlowDirection = FlowDirection.LeftToRight, WrapContents = false, AutoSize = true, Margin = new Padding(0) };
+            var all = new LinkLabel { Text = "Tick shown", AutoSize = true, LinkColor = Theme.Brand, Margin = new Padding(3, 0, 8, 0) };
+            all.LinkClicked += (s, e) => { foreach (TableItem t in clbTables.Items) pickedTables.Add(t.Name); FillTableList(); };
+            var none = new LinkLabel { Text = "Clear", AutoSize = true, LinkColor = Theme.Brand, Margin = new Padding(0, 0, 8, 0) };
+            none.LinkClicked += (s, e) => { pickedTables.Clear(); FillTableList(); };
+            lblTableCount = new System.Windows.Forms.Label { AutoSize = true, ForeColor = Theme.Muted, Font = Theme.Small, Margin = new Padding(0, 1, 0, 0) };
+            links.Controls.Add(all);
+            links.Controls.Add(none);
+            links.Controls.Add(lblTableCount);
+            tablePicker.Controls.Add(links);
+            box.Controls.Add(tablePicker);
+
+            rbPickTables.CheckedChanged += (s, e) =>
+            {
+                tablePicker.Visible = rbPickTables.Checked;
+                UpdateFilterSummary();
+                if (rbPickTables.Checked) RefreshTableList();
+            };
+            tableRefresh.Tick += (s, e) => { tableRefresh.Stop(); RefreshTableList(); };
+            return box;
+        }
+
+        void RequestTableRefresh()
+        {
+            if (rbPickTables == null || !rbPickTables.Checked) return;
+            tableRefresh.Stop();
+            tableRefresh.Start();
+        }
+
+        /// <summary>Lists the tables that the current solution / custom-only scope covers (needs metadata from Step 1).</summary>
+        void RefreshTableList()
+        {
+            if (!rbPickTables.Checked) return;
+            if (cache == null || Service == null)
+            {
+                tablesInScope.Clear();
+                FillTableList();
+                lblTableCount.Text = "Click 'Load metadata & solutions' (Step 1) first.";
+                return;
+            }
+            var opts = ReadOptions();
+            opts.Tables.Clear();   // list every table in scope, not just the picked ones
+            var md = cache;
+            lblTableCount.Text = "Loading tables...";
+            WorkAsync(new WorkAsyncInfo
+            {
+                Message = "Finding tables in the selected solutions...",
+                Work = (w, a) =>
+                {
+                    var scope = new Scope(Service, opts, CancellationToken.None);
+                    a.Result = md.Entities.Where(scope.Entity)
+                                 .Select(e => new TableItem
+                                 {
+                                     Name = e.LogicalName,
+                                     Text = $"{e.DisplayName?.UserLocalizedLabel?.Label ?? e.LogicalName} ({e.LogicalName})"
+                                 })
+                                 .OrderBy(t => t.Text, StringComparer.OrdinalIgnoreCase).ToList();
+                },
+                PostWorkCallBack = a =>
+                {
+                    if (a.Error != null) { Log("ERROR loading table list: " + a.Error.Message); lblTableCount.Text = "Could not load tables - see the activity log."; return; }
+                    tablesInScope = (List<TableItem>)a.Result;
+                    pickedTables.IntersectWith(tablesInScope.Select(t => t.Name));   // drop picks that left the scope
+                    FillTableList();
+                }
+            });
+        }
+
+        void FillTableList()
+        {
+            if (clbTables == null) return;
+            var q = txtTableSearch.Text.Trim();
+            fillingTables = true;
+            clbTables.BeginUpdate();
+            clbTables.Items.Clear();
+            foreach (var t in tablesInScope.Where(t => q.Length == 0 || t.Text.IndexOf(q, StringComparison.OrdinalIgnoreCase) >= 0))
+                clbTables.Items.Add(t, pickedTables.Contains(t.Name));
+            clbTables.EndUpdate();
+            fillingTables = false;
+            UpdateTableCount();
+        }
+
+        void UpdateTableCount()
+        {
+            lblTableCount.Text = $"{pickedTables.Count:N0} of {tablesInScope.Count:N0} tables ticked";
+            UpdateFilterSummary();
         }
 
         TabPage BuildReportPage(int i)
@@ -401,7 +531,8 @@ namespace SolutionAnalyzerFieldHealthChecker
             var parts = new List<string>
             {
                 sols == 0 ? "Whole environment" : $"{sols} solution(s)",
-                chkCustomOnly.Checked ? "custom tables only" : "all tables",
+                rbPickTables != null && rbPickTables.Checked ? $"{pickedTables.Count} table(s) picked"
+                    : chkCustomOnly.Checked ? "custom tables only" : "all tables",
                 chkSystemFields.Checked ? "custom + system fields" : "custom fields"
             };
             bool tuned = nudFuzzy.Value != 0.85m || nudOptSet.Value != 0.80m || nudUtil.Value != 50 || nudSample.Value != 50000;
@@ -582,6 +713,7 @@ namespace SolutionAnalyzerFieldHealthChecker
                     clbSolutions.Items.Clear();
                     foreach (var s in t.Item1) clbSolutions.Items.Add(s);
                     SetLoadStatus($"✔ Loaded {cache.Entities.Count:N0} tables and {t.Item1.Count:N0} solutions.", Theme.Fore(Severity.Healthy));
+                    RefreshTableList();
                 }
             });
         }
@@ -590,6 +722,7 @@ namespace SolutionAnalyzerFieldHealthChecker
         AnalyzerOptions ReadOptions() => new AnalyzerOptions
         {
             SolutionIds = clbSolutions.CheckedItems.Cast<SolItem>().Select(s => s.Id).ToList(),
+            Tables = new HashSet<string>(rbPickTables.Checked ? pickedTables : Enumerable.Empty<string>(), StringComparer.OrdinalIgnoreCase),
             CustomEntitiesOnly = chkCustomOnly.Checked,
             IncludeSystemFields = chkSystemFields.Checked,
             FuzzyThreshold = (double)nudFuzzy.Value,
@@ -600,6 +733,11 @@ namespace SolutionAnalyzerFieldHealthChecker
 
         void Run(int idx)
         {
+            if (rbPickTables.Checked && pickedTables.Count == 0)
+            {
+                MessageBox.Show("Tick at least one table under Step 2 > Tables, or choose 'All tables in scope'.", "No tables selected");
+                return;
+            }
             var opts = ReadOptions();
             cts = new CancellationTokenSource();
             var ct = cts.Token;

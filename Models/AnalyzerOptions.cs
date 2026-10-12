@@ -6,6 +6,7 @@ namespace SolutionAnalyzerFieldHealthChecker.Models
     public class AnalyzerOptions
     {
         public List<Guid> SolutionIds = new List<Guid>();   // empty = whole environment
+        public HashSet<string> Tables = new HashSet<string>(StringComparer.OrdinalIgnoreCase); // table logical names; empty = all tables in scope
         public bool CustomEntitiesOnly = true;
         public bool IncludeSystemFields = false;
         public double FuzzyThreshold = 0.85;      // field-name similarity

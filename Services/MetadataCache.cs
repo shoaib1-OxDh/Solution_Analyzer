@@ -34,7 +34,7 @@ namespace SolutionAnalyzerFieldHealthChecker.Services
         }
     }
 
-    /// <summary>Decides which tables/columns are analysed (solution filter, custom-only, system fields).</summary>
+    /// <summary>Decides which tables/columns are analysed (solution filter, picked tables, custom-only, system fields).</summary>
     public class Scope
     {
         readonly AnalyzerOptions o;
@@ -60,6 +60,7 @@ namespace SolutionAnalyzerFieldHealthChecker.Services
         public bool Entity(EntityMetadata e)
         {
             if (e.IsIntersect == true) return false;
+            if (o.Tables.Count > 0 && !o.Tables.Contains(e.LogicalName)) return false;
             if (o.CustomEntitiesOnly && e.IsCustomEntity != true) return false;
             if (filtered && !entIds.Contains(e.MetadataId ?? Guid.Empty) &&
                 !e.Attributes.Any(a => attrIds.Contains(a.MetadataId ?? Guid.Empty))) return false;

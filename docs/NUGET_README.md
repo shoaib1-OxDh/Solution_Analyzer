@@ -22,7 +22,7 @@ Requires XrmToolBox 1.2025.7.71 or later.
 
 1. Connect to your environment and open the tool.
 2. **Step 1** - click *Load metadata & solutions*.
-3. **Step 2** (optional) - expand *Scope & filters* to limit the check to specific solutions or change thresholds.
+3. **Step 2** (optional) - expand *Scope & filters* to pick solutions, then either keep *All tables in scope* or choose *Specific tables* and tick the tables you want; you can also change thresholds.
 4. **Step 3** - click one of the four coloured report buttons.
 5. Click the coloured **summary cards** to filter the results, use **Search**, and **Export to CSV** to share what you see.
 
