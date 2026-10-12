@@ -149,7 +149,7 @@ namespace SolutionAnalyzerFieldHealthChecker
             filters.Controls.Add(clbSolutions);
             chkCustomOnly = Check("Custom tables only", true, "Skip out-of-the-box Microsoft tables.");
             chkSystemFields = Check("Include system (non-custom) fields", false, "Also analyse standard columns, not just custom ones.");
-            chkCustomOnly.CheckedChanged += (s, e) => { UpdateFilterSummary(); RequestTableRefresh(); };
+            chkCustomOnly.CheckedChanged += (s, e) => UpdateFilterSummary();
             chkSystemFields.CheckedChanged += (s, e) => UpdateFilterSummary();
             filters.Controls.Add(chkCustomOnly);
             filters.Controls.Add(chkSystemFields);
@@ -214,14 +214,14 @@ namespace SolutionAnalyzerFieldHealthChecker
             rbAllTables = new RadioButton { Text = "All tables in scope", Checked = true, AutoSize = true, Margin = new Padding(3, 0, 12, 0) };
             rbPickTables = new RadioButton { Text = "Specific tables", AutoSize = true, Margin = new Padding(3, 0, 3, 0) };
             tip.SetToolTip(rbAllTables, "Analyse every table in the selected solutions (or the whole environment).");
-            tip.SetToolTip(rbPickTables, "Pick one or more tables from the selected solutions.");
+            tip.SetToolTip(rbPickTables, "Pick one or more tables from the selected solutions. Picked tables are analysed even if they are standard tables ('Custom tables only' does not apply).");
             var radios = new FlowLayoutPanel { FlowDirection = FlowDirection.LeftToRight, WrapContents = false, AutoSize = true, Margin = new Padding(0) };
             radios.Controls.Add(rbAllTables);
             radios.Controls.Add(rbPickTables);
             box.Controls.Add(radios);
 
             tablePicker = new FlowLayoutPanel { FlowDirection = FlowDirection.TopDown, WrapContents = false, AutoSize = true, Visible = false, Margin = new Padding(0) };
-            tablePicker.Controls.Add(Hint("Tables from the ticked solutions (or all, if none ticked). Type to search:"));
+            tablePicker.Controls.Add(Hint("All tables in the ticked solutions (or the whole environment), including standard tables such as Contact. Type to search:"));
             txtTableSearch = new TextBox { Width = LeftWidth, Margin = new Padding(3, 0, 3, 2) };
             txtTableSearch.TextChanged += (s, e) => FillTableList();
             tip.SetToolTip(txtTableSearch, "Filter the list by display name or logical name.");
@@ -277,7 +277,8 @@ namespace SolutionAnalyzerFieldHealthChecker
                 return;
             }
             var opts = ReadOptions();
-            opts.Tables.Clear();   // list every table in scope, not just the picked ones
+            opts.Tables.Clear();              // list every table in scope, not just the picked ones
+            opts.CustomEntitiesOnly = false;  // include standard tables such as contact - the user picks explicitly
             var md = cache;
             lblTableCount.Text = "Loading tables...";
             WorkAsync(new WorkAsyncInfo

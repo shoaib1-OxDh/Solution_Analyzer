@@ -61,7 +61,8 @@ namespace SolutionAnalyzerFieldHealthChecker.Services
         {
             if (e.IsIntersect == true) return false;
             if (o.Tables.Count > 0 && !o.Tables.Contains(e.LogicalName)) return false;
-            if (o.CustomEntitiesOnly && e.IsCustomEntity != true) return false;
+            // tables the user picked by name are analysed even when they are standard (e.g. contact)
+            if (o.Tables.Count == 0 && o.CustomEntitiesOnly && e.IsCustomEntity != true) return false;
             if (filtered && !entIds.Contains(e.MetadataId ?? Guid.Empty) &&
                 !e.Attributes.Any(a => attrIds.Contains(a.MetadataId ?? Guid.Empty))) return false;
             return true;
