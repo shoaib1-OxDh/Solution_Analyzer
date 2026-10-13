@@ -114,7 +114,16 @@ namespace SolutionAnalyzerFieldHealthChecker
                 Dock = DockStyle.Left, AutoSize = true, ForeColor = Color.White, Font = Theme.Title, UseMnemonic = false,
                 Text = "Solution Analyzer & Field Health Checker", Padding = new Padding(0, 5, 12, 0)
             };
+            // build version (1.<year>.<MMdd>.<HHmm>) on the right of the title bar - uses space that is otherwise empty
+            var version = Assembly.GetExecutingAssembly().GetName().Version;
+            var ver = new System.Windows.Forms.Label
+            {
+                Dock = DockStyle.Right, AutoSize = true, ForeColor = Color.FromArgb(214, 228, 242), Font = Theme.Small, UseMnemonic = false,
+                Text = $"v{version}", Padding = new Padding(12, 10, 0, 0)
+            };
+            tip.SetToolTip(ver, $"Version {version} - the number is the build date and time (year, month/day, hour/minute).");
             banner.Controls.Add(sub);
+            banner.Controls.Add(ver);
             banner.Controls.Add(title);
             return banner;
         }
