@@ -349,9 +349,19 @@ namespace SolutionAnalyzerFieldHealthChecker
             page.Controls.Add(layout);
 
             // one-line title + summary, "how to read" hidden behind a link
-            var head = new FlowLayoutPanel { FlowDirection = FlowDirection.LeftToRight, WrapContents = true, AutoSize = true, Dock = DockStyle.Fill, Margin = new Padding(0) };
-            head.Controls.Add(new System.Windows.Forms.Label { Text = d.Name, Font = Theme.Section, ForeColor = d.Accent, AutoSize = true, UseMnemonic = false, Margin = new Padding(0, 2, 8, 0) });
-            head.Controls.Add(new System.Windows.Forms.Label { Text = d.Summary, AutoSize = true, ForeColor = Theme.Muted, UseMnemonic = false, Margin = new Padding(0, 4, 8, 0) });
+            // title | summary (cut with "..." on small screens, full text in the tooltip) | link - always one line
+            var head = new TableLayoutPanel { ColumnCount = 3, RowCount = 1, AutoSize = true, Dock = DockStyle.Fill, Margin = new Padding(0) };
+            head.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
+            head.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
+            head.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
+            head.Controls.Add(new System.Windows.Forms.Label { Text = d.Name, Font = Theme.Section, ForeColor = d.Accent, AutoSize = true, UseMnemonic = false, Margin = new Padding(0, 2, 8, 0) }, 0, 0);
+            var summaryLabel = new System.Windows.Forms.Label
+            {
+                Text = d.Summary, AutoSize = false, AutoEllipsis = true, Dock = DockStyle.Fill, Height = 22, TextAlign = ContentAlignment.MiddleLeft,
+                ForeColor = Theme.Muted, UseMnemonic = false, Margin = new Padding(0, 0, 8, 0)
+            };
+            tip.SetToolTip(summaryLabel, d.Summary);
+            head.Controls.Add(summaryLabel, 1, 0);
             var how = new System.Windows.Forms.Label
             {
                 Text = d.HowToRead, AutoSize = true, ForeColor = Theme.Text, BackColor = Theme.BrandSoft, UseMnemonic = false,
@@ -359,7 +369,7 @@ namespace SolutionAnalyzerFieldHealthChecker
             };
             var link = new LinkLabel { Text = "How to read this report ▸", AutoSize = true, LinkColor = Theme.Brand, Margin = new Padding(0, 4, 0, 0) };
             link.LinkClicked += (s, e) => { how.Visible = !how.Visible; link.Text = "How to read this report " + (how.Visible ? "▾" : "▸"); };
-            head.Controls.Add(link);
+            head.Controls.Add(link, 2, 0);
             layout.Controls.Add(head, 0, 0);
             layout.Controls.Add(how, 0, 1);
             page.Resize += (s, e) => how.MaximumSize = new Size(Math.Max(200, page.ClientSize.Width - 24), 0);
@@ -368,12 +378,12 @@ namespace SolutionAnalyzerFieldHealthChecker
             var bar = new FlowLayoutPanel { AutoSize = true, Dock = DockStyle.Fill, WrapContents = true, Margin = new Padding(0, 2, 0, 4) };
             cardPanels[i] = new FlowLayoutPanel { AutoSize = true, WrapContents = false, Margin = new Padding(0, 0, 8, 0) };
             bar.Controls.Add(cardPanels[i]);
-            bar.Controls.Add(new System.Windows.Forms.Label { Text = "Search:", AutoSize = true, Margin = new Padding(0, 12, 4, 0), ForeColor = Theme.Muted });
-            searches[i] = new TextBox { Width = 220, Margin = new Padding(0, 9, 0, 0) };
+            bar.Controls.Add(new System.Windows.Forms.Label { Text = "Search:", AutoSize = true, Margin = new Padding(0, 6, 4, 0), ForeColor = Theme.Muted });
+            searches[i] = new TextBox { Width = 200, Margin = new Padding(0, 3, 0, 0) };
             searches[i].TextChanged += (s, e) => ApplyFilter(i);
             tip.SetToolTip(searches[i], "Type any part of a table, field or value to filter the rows below.");
             bar.Controls.Add(searches[i]);
-            counts[i] = new System.Windows.Forms.Label { AutoSize = true, Margin = new Padding(10, 12, 0, 0), ForeColor = Theme.Muted };
+            counts[i] = new System.Windows.Forms.Label { AutoSize = true, Margin = new Padding(10, 6, 0, 0), ForeColor = Theme.Muted };
             bar.Controls.Add(counts[i]);
             layout.Controls.Add(bar, 0, 2);
 
@@ -696,11 +706,20 @@ namespace SolutionAnalyzerFieldHealthChecker
 
         Button Card(int i, int count, string label, Color fore, Color back, string filter, string help)
         {
+            // one line: bold count, then the label - e.g. "14  All results"
+            string num = count.ToString("N0");
+            var numSize = TextRenderer.MeasureText(num, Theme.Bold);
+            var labelSize = TextRenderer.MeasureText(label, Theme.Base);
             var b = new Button
             {
-                Text = $"{count:N0}\n{label}", Tag = filter, AutoSize = true, MinimumSize = new Size(100, 38), Padding = new Padding(6, 0, 6, 0),
-                FlatStyle = FlatStyle.Flat, BackColor = back, UseMnemonic = false,
-                ForeColor = fore, Font = Theme.Bold, Cursor = Cursors.Hand, Margin = new Padding(0, 0, 6, 0)
+                Text = "", AccessibleName = $"{num} {label}", Tag = filter, Size = new Size(numSize.Width + labelSize.Width + 16, 26),
+                FlatStyle = FlatStyle.Flat, BackColor = back, ForeColor = fore, Cursor = Cursors.Hand, Margin = new Padding(0, 0, 6, 0)
+            };
+            b.Paint += (s, e) =>
+            {
+                var flags = TextFormatFlags.VerticalCenter | TextFormatFlags.NoPadding | TextFormatFlags.NoPrefix;
+                TextRenderer.DrawText(e.Graphics, num, Theme.Bold, new Rectangle(7, 0, numSize.Width, b.Height), fore, flags);
+                TextRenderer.DrawText(e.Graphics, label, Theme.Base, new Rectangle(7 + numSize.Width + 2, 0, labelSize.Width + 4, b.Height), fore, flags);
             };
             b.FlatAppearance.BorderColor = fore;
             b.FlatAppearance.MouseOverBackColor = ControlPaint.Dark(back, 0.03f);
@@ -712,7 +731,7 @@ namespace SolutionAnalyzerFieldHealthChecker
         void HighlightCards(int i)
         {
             foreach (Button b in cardPanels[i].Controls)
-                b.FlatAppearance.BorderSize = Equals(b.Tag as string, cardFilters[i]) ? 3 : 1;
+                b.FlatAppearance.BorderSize = Equals(b.Tag as string, cardFilters[i]) ? 2 : 1;
         }
 
         // ---------------- loading ----------------
